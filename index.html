@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PROGRAMATION</title>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/php/php.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/sql/sql.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+    
+    <style>
+        :root { --bg: #000; --panel: #050505; --accent: #00e5ff; --err: #ff3366; --border: #111; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--bg); color: white; display: flex; height: 100vh; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        #sidebar { width: 60px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 15px 0; gap: 20px; z-index: 100; }
+        .btn { background: none; border: none; color: #555; cursor: pointer; padding: 10px; border-radius: 10px; transition: 0.3s; }
+        .btn:hover { color: var(--accent); background: rgba(0, 229, 255, 0.1); }
+        #main { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .CodeMirror { flex: 1; height: 100%; font-family: 'Consolas', monospace; user-select: text !important; }
+        #out { position: fixed; inset: 0; background: #000; display: none; z-index: 1000; flex-direction: column; }
+        #pyOut { flex: 1; padding: 40px; color: #00ff88; font-family: monospace; overflow: auto; white-space: pre-wrap; display: none; font-size: 16px; }
+        iframe { flex: 1; border: none; background: white; display: none; }
+        #ai { position: absolute; right: 0; top: 0; width: 100%; max-width: 380px; height: 100%; background: #080808; border-left: 1px solid var(--border); display: none; flex-direction: column; z-index: 500; }
+        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .m { padding: 10px; border-radius: 8px; font-size: 13px; line-height: 1.4; user-select: text !important; }
+        .m-u { background: #1a1a1a; align-self: flex-end; border-right: 3px solid #444; width: 90%; }
+        .m-a { background: rgba(0, 229, 255, 0.05); border-left: 3px solid var(--accent); width: 95%; }
+        .m-e { background: rgba(255, 51, 102, 0.1); border: 1px solid var(--err); color: var(--err); width: 100%; text-align: center; }
+        #in-box { display: flex; padding: 10px; border-top: 1px solid var(--border); background: #000; }
+        #msgIn { flex: 1; background: #111; border: 1px solid #222; color: #fff; padding: 10px; border-radius: 5px; resize: none; outline: none; height: 40px; }
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(5px); }
+        .box { background: #0a0a0a; padding: 25px; border-radius: 15px; border: 1px solid var(--border); width: 300px; }
+        label { color: #666; font-size: 11px; display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; text-transform: uppercase; }
+        select { width: 100%; padding: 12px; background: #111; color: white; border: 1px solid #333; border-radius: 8px; outline: none; }
+        #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #000; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 3000; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <div id="toast"></div>
+    <nav id="sidebar">
+        <button class="btn" onclick="run()"><i data-lucide="play" color="#00ff88"></i></button>
+        <button class="btn" onclick="toggleAI()"><i data-lucide="message-square"></i></button>
+        <button class="btn" onclick="fixCode()"><i data-lucide="wrench" color="#ffcc00"></i></button>
+        <button class="btn" onclick="fs()"><i data-lucide="maximize"></i></button>
+        <div style="flex:1"></div>
+        <button class="btn" onclick="showSet()"><i data-lucide="settings"></i></button>
+        <button class="btn" onclick="cls()"><i data-lucide="trash-2" color="#ff3366"></i></button>
+    </nav>
+    <div id="main">
+        <textarea id="editor"></textarea>
+        <div id="out">
+            <button onclick="closeOut()" style="position:absolute; top:20px; right:20px; background:var(--err); border:none; color:white; border-radius:50%; width:40px; height:40px; cursor:pointer; z-index:1001;"><i data-lucide="x"></i></button>
+            <div id="pyOut"></div>
+            <iframe id="ifr"></iframe>
+        </div>
+        <div id="ai">
+            <div style="padding:15px; border-bottom:1px solid #111; display:flex; justify-content:space-between; align-items:center;">
+                <b style="color:var(--accent);">PROGRAMATION</b>
+                <i data-lucide="x" onclick="toggleAI()" style="cursor:pointer; width:18px;"></i>
+            </div>
+            <div id="chat"></div>
+            <div id="in-box"><textarea id="msgIn" placeholder="Escribe aquí..."></textarea><button onclick="askAI()" style="background:var(--accent); border:none; margin-left:8px; border-radius:5px; padding:0 15px; font-weight:bold; cursor:pointer; color:black;">OK</button></div>
+        </div>
+    </div>
+    <div id="modal">
+        <div class="box">
+            <h3 style="margin:0; text-align:center; color:var(--accent);">AJUSTES</h3>
+            <label>Lenguaje</label>
+            <select id="lang">
+                <option value="htmlmixed">Web (HTML/CSS/JS)</option>
+                <option value="python">Python 3</option>
+                <option value="javascript">JavaScript</option>
+                <option value="text/x-c++src">C++</option>
+                <option value="text/x-java">Java</option>
+                <option value="text/x-php">PHP</option>
+                <option value="text/x-sql">SQL</option>
+            </select>
+            <label>Tamaño Fuente</label>
+            <select id="fontSize">
+                <option value="12px">12px</option>
+                <option value="14px" selected>14px</option>
+                <option value="16px">16px</option>
+                <option value="18px">18px</option>
+                <option value="20px">20px</option>
+            </select>
+            <button onclick="saveSet()" style="width:100%; padding:12px; background:var(--accent); border:none; margin-top:25px; font-weight:bold; border-radius:8px; cursor:pointer; color:black;">GUARDAR</button>
+        </div>
+    </div>
+    <script>
+        const _K = () => ['gsk','_m8','BAC','4s1','5cPb','MU99','aOos','WGdy','b3FY','mrPx','4RW2','qwG9','WbzA','WFK1','f8H8'].join('');
+        let mode = "htmlmixed";
+        lucide.createIcons();
+        const editor = CodeMirror.fromTextArea(document.getElementById("editor"), { mode: "htmlmixed", theme: "dracula", lineNumbers: true, lineWrapping: true });
+
+        editor.on("change", () => { localStorage.setItem("cjr_code", editor.getValue()); localStorage.setItem("cjr_mode", mode); });
+        window.onload = () => { const sc = localStorage.getItem("cjr_code"); const sm = localStorage.getItem("cjr_mode"); if(sc) editor.setValue(sc); if(sm) { mode = sm; document.getElementById("lang").value = sm; editor.setOption("mode", sm); } toast("Proyecto recuperado"); };
+
+        const toast = (m, e=false) => { const t = document.getElementById("toast"); t.innerText = m; t.style.background = e ? "var(--err)" : "var(--accent)"; t.style.display = "block"; setTimeout(()=>t.style.display="none", 2500); };
+        window.showSet = () => document.getElementById("modal").style.display = "flex";
+        window.saveSet = () => { mode = document.getElementById("lang").value; document.querySelector(".CodeMirror").style.fontSize = document.getElementById("fontSize").value; editor.setOption("mode", mode); editor.refresh(); document.getElementById("modal").style.display = "none"; toast("Configuración aplicada"); };
+        
+        window.run = () => {
+            const code = editor.getValue().trim(); if(!code) return toast("Editor vacío", true);
+            const p = document.getElementById("out"); const i = document.getElementById("ifr"); const o = document.getElementById("pyOut");
+            p.style.display = "flex";
+            if(mode === "python") { i.style.display = "none"; o.style.display = "block"; o.innerHTML = ""; Sk.configure({ output: (t) => o.innerHTML += t }); Sk.importMainWithBody("<stdin>", false, code, true).catch(e => { o.innerHTML = `<div style="color:var(--err)">⚠️ ERROR:\n${e.toString()}</div>`; }); }
+            else { o.style.display = "none"; i.style.display = "block"; i.srcdoc = code; }
+        };
+
+        const handleLimit = (s) => { const c = document.getElementById("chat"); const id = "err-"+Date.now(); c.innerHTML += `<div id="${id}" class="m m-e">Pausa de seguridad: ${s}s</div>`; c.scrollTop = c.scrollHeight; let t = s; const iv = setInterval(() => { t--; const el = document.getElementById(id); if(!el) return clearInterval(iv); if(t<=0) { el.innerHTML = "¡Listo! ✅"; el.style.color = "var(--accent)"; clearInterval(iv); } else el.innerHTML = `Pausa de seguridad: ${t}s`; }, 1000); };
+        
+        window.fixCode = async () => {
+            const code = editor.getValue().trim(); if(!code) return toast("Escribe código", true);
+            toast("Reparando...");
+            try {
+                const r = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Authorization": "Bearer " + _K(), "Content-Type": "application/json" }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [{role: "system", content: "Solo código limpio."}, {role: "user", content: "Corrige: " + code}] }) });
+                if(r.status === 429) return handleLimit(60);
+                const d = await r.json(); editor.setValue(d.choices[0].message.content.trim()); toast("¡Perfeccionado! ✨");
+            } catch(e) { toast("Error", true); }
+        };
+        
+        window.askAI = async () => {
+            const msg = document.getElementById("msgIn"); const chat = document.getElementById("chat");
+            if(!msg.value.trim()) return; const t = msg.value;
+            chat.innerHTML += `<div class="m m-u"><b>Tú:</b>\n${t}</div>`; msg.value = ""; chat.scrollTop = chat.scrollHeight;
+            try {
+                const r = await fetch("https://api.groq.com/openai/v1/chat/completions", { method: "POST", headers: { "Authorization": "Bearer " + _K(), "Content-Type": "application/json" }, body: JSON.stringify({ model: "llama-3.1-8b-instant", messages: [
+                    {role: "system", content: "Eres PROGRAMATION, una IA experta en programación y conversación. Responde con fluidez y empatía a temas personales, y con máxima precisión técnica a temas de código. Evita sonar robótica."}, 
+                    {role: "user", content: t}
+                ] }) });
+                if(r.status === 429) return handleLimit(60);
+                const d = await r.json(); chat.innerHTML += `<div class="m m-a"><b>PROGRAMATION:</b>\n${d.choices[0].message.content}</div>`; chat.scrollTop = chat.scrollHeight;
+            } catch(e) { chat.innerHTML += `<div class="m m-e">Error de conexión</div>`; }
+        };
+
+        window.toggleAI = () => { const p = document.getElementById("ai"); p.style.display = p.style.display === "flex" ? "none" : "flex"; editor.refresh(); };
+        window.closeOut = () => document.getElementById("out").style.display = "none";
+        window.cls = () => { if(confirm("¿Borrar todo?")) { editor.setValue(""); localStorage.removeItem("cjr_code"); } };
+        window.fs = () => { if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
+        document.onkeydown = (e) => { if(e.keyCode == 123 || (e.ctrlKey && [85,73,74,83].includes(e.keyCode))) return false; };
+    </script>
+</body>
+</html>
